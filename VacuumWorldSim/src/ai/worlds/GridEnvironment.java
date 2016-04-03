@@ -1,14 +1,24 @@
 package ai.worlds;
 
-import java.awt.*;
-import java.awt.event.*;
-
-import javax.swing.*;
-import javax.swing.plaf.metal.MetalLookAndFeel;
-
+import java.awt.BorderLayout;
+import java.awt.Canvas;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Insets;
+import java.awt.Point;
+import java.util.ArrayList;
 import java.util.Vector;
 
-import ai.worlds.vacuumbase.*;
+import javax.swing.BorderFactory;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.plaf.metal.MetalLookAndFeel;
+
+import ai.worlds.vacuumbase.VacuumAgent;
 //import ai.worlds.wumpus.*;
 /**
  * An environment with a two-dimensional grid layout occupied by objects.
@@ -48,6 +58,8 @@ public abstract class GridEnvironment extends Environment implements Cloneable
 	protected boolean newlyVisited; //whether or not this is our first time visiting a space
 	
 	JFrame holder;
+	
+	static ArrayList<Location> memoria = new ArrayList<Location>();
 	
 	public GridEnvironment(Agent[] a, int xsize, int ysize, JFrame f)
 	{
@@ -229,14 +241,31 @@ public abstract class GridEnvironment extends Environment implements Cloneable
 	{
 	    Object a = ((Vector) grid[1][1]).elementAt(0);
 	    ((Vector) grid[1][1]).removeElementAt(0);
+	    memoria.clear(); //ams rebuild temp
 	    for (int i=1; i<size.x-1; i++)
 		for (int j=1; j<size.y-1; j++){
 		    if (Math.random() < prob)
 			try{
-			    addObj(new Location(i,j), (Obj)c.newInstance());
+				Location novaLocation = new Location(i,j);
+				//addObj(new Location(i,j), (Obj)c.newInstance()); //ams rebuild temp
+			    addObj(novaLocation, (Obj)c.newInstance());
+			    memoria.add(novaLocation);
 			}
 			catch(Exception e) {System.out.println(e);}
 		}
+	    ((Vector) grid[1][1]).addElement(a);
+	}
+	
+	public void reFillGrid(Class c)
+	{
+	    Object a = ((Vector) grid[1][1]).elementAt(0);
+	    ((Vector) grid[1][1]).removeElementAt(0);
+
+	    for (Location novaLocation : memoria){
+	    	try{
+	    		addObj(novaLocation, (Obj)c.newInstance());
+	    	} catch(Exception e) {System.out.println(e);}
+	    }
 	    ((Vector) grid[1][1]).addElement(a);
 	}
 	

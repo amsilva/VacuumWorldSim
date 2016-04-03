@@ -15,7 +15,12 @@ public class VacuumWorld extends GridEnvironment
     	super(a,xsize,ysize, f);
     	fillGrid(probDirt,(new Dirt()).getClass());
     }
-    
+
+    public VacuumWorld(Agent[] a, int xsize, int ysize, JFrame f) {
+    	super(a,xsize,ysize, f);
+    	reFillGrid((new Dirt()).getClass());
+    }
+
     /**
      * Determine if an action is legal.
      * @param a is an action string.

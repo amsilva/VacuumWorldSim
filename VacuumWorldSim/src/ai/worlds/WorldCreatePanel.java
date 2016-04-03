@@ -16,6 +16,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -45,6 +47,8 @@ import ai.worlds.vacuumbase.VacuumWorld;
 
 
 
+
+
 import javax.swing.DefaultComboBoxModel;
 
 /**
@@ -53,14 +57,15 @@ import javax.swing.DefaultComboBoxModel;
  *
  */
 
+@SuppressWarnings("serial")
 public class WorldCreatePanel extends JPanel implements ActionListener, ItemListener {
 	private static final Color metalColor = MetalLookAndFeel.getTextHighlightColor(); 
 	
-    private JComboBox envs;
-    private JComboBox agents;
+    private JComboBox<String> envs;
+    private JComboBox<String> agents;
     private JTextField xsize;
     private JTextField ysize;
-    private JList trialAgents;
+    private JList<String> trialAgents;
     JTextField numTrials;
     private JCheckBox randomSizes;
     
@@ -72,20 +77,19 @@ public class WorldCreatePanel extends JPanel implements ActionListener, ItemList
     private JTextArea results;
     private JLabel title;
     private JPanel p = new JPanel();
-    private String s = new String();
-    private String filepath, filename;
+    //private String s = new String();
+    //private String filepath, filename;
     public JButton simWorld = new JButton();
     
-    private boolean isLoaded = false;
-    
-    private JComboBox amsCbxAgent;
-    private JComboBox amsCbxEnv;
-    JComboBox amsCBoxProbab;
-    JSpinner amsSpinnerX;
+    private JComboBox<String> amsCbxAgent;
+    private JComboBox<String> amsCbxEnv;
+    private JComboBox<String> amsCBoxProbab;
+    private JSpinner amsSpinnerX;
     JSpinner amsSpinnerY;
     JButton amsBtnStep;
     JButton amsBtnRun;
     JButton amsBtnBuildEnv;
+    JButton amsBtnClear;
     
     GridEnvironment world;
     
@@ -120,9 +124,9 @@ public class WorldCreatePanel extends JPanel implements ActionListener, ItemList
     	holder = f;
     	setLayout(new BorderLayout());
     	//setup NorthPanel
-    	envs = new JComboBox(worldStrings);
+    	envs = new JComboBox<String>(worldStrings);
     	envs.addItemListener(this);
-    	agents = new JComboBox(vacuumStrings);
+    	agents = new JComboBox<String>(vacuumStrings);
     	xsize = new JTextField("5",5);
     	ysize = new JTextField("5",5);
     	gridbag = new GridBagLayout();
@@ -175,7 +179,7 @@ public class WorldCreatePanel extends JPanel implements ActionListener, ItemList
 		
 		northCenterPanel.add(amsLbEnv);
 		
-		amsCbxEnv = new JComboBox(worldStrings);
+		amsCbxEnv = new JComboBox<String>(worldStrings);
 		amsCbxEnv.setEnabled(false);
 		amsCbxEnv.setBounds(112, 31, 183, 20);
 		northCenterPanel.add(amsCbxEnv);
@@ -184,7 +188,7 @@ public class WorldCreatePanel extends JPanel implements ActionListener, ItemList
 		amsLblAgent.setBounds(66, 59, 36, 14);
 		northCenterPanel.add(amsLblAgent);
 		
-		amsCbxAgent = new JComboBox(vacuumStrings);
+		amsCbxAgent = new JComboBox<String>(vacuumStrings);
 		amsCbxAgent.setToolTipText("tool tip text");
 		amsCbxAgent.setBounds(112, 59, 183, 20);
 		northCenterPanel.add(amsCbxAgent);
@@ -194,6 +198,7 @@ public class WorldCreatePanel extends JPanel implements ActionListener, ItemList
 		JLabel amsLblXSize = new JLabel("Size x:");
 		amsLblXSize.setBounds(305, 34, 46, 14);
 		northCenterPanel.add(amsLblXSize);
+		amsCbxAgent.addActionListener(this);
 		
 		JLabel amsLblMaxSteps = new JLabel("Max Steps:");
 		amsLblMaxSteps.setBounds(396, 59, 81, 14); 
@@ -203,11 +208,16 @@ public class WorldCreatePanel extends JPanel implements ActionListener, ItemList
 		amsSpinnerX.setBounds(349, 31, 37, 20);
 		amsSpinnerX.setValue(5);
 		northCenterPanel.add(amsSpinnerX);
+		((JSpinner.DefaultEditor)amsSpinnerX.getEditor()).getTextField().addFocusListener(
+				new MyFocusAdapter());
+		
 		
 		amsSpinnerY = new JSpinner();
 		amsSpinnerY.setBounds(349, 56, 37, 20);
 		amsSpinnerY.setValue(5);
 		northCenterPanel.add(amsSpinnerY);
+		((JSpinner.DefaultEditor)amsSpinnerY.getEditor()).getTextField().addFocusListener(
+				new MyFocusAdapter());
 		
 		amsTextFieldMaxSteps = new JTextField();
 		amsTextFieldMaxSteps.setText("100");
@@ -220,15 +230,16 @@ public class WorldCreatePanel extends JPanel implements ActionListener, ItemList
 		northCenterPanel.add(lblConstruction);
 		
         amsBtnBuildEnv = new JButton("Build");
-		amsBtnBuildEnv.setBounds(515, 56, 100, 23);
+		amsBtnBuildEnv.setBounds(515, 31, 100, 23);
 		amsBtnBuildEnv.setEnabled(false);
 		northCenterPanel.add(amsBtnBuildEnv);
 		amsBtnBuildEnv.setVerticalAlignment(SwingConstants.BOTTOM);
 		amsBtnBuildEnv.addActionListener(this);
 		
-		JButton amsBtnClear = new JButton("Destroy");
+		//JButton amsBtnClear = new JButton("Destroy"); //ams reload map 
+		amsBtnClear = new JButton("Reload"); //ams reload map temp
 		amsBtnClear.setEnabled(false);
-		amsBtnClear.setBounds(515, 26, 100, 23);
+		amsBtnClear.setBounds(515, 59, 100, 23);
 		northCenterPanel.add(amsBtnClear);
 		
 		JLabel amsLblYSize = new JLabel("Size y:");
@@ -239,8 +250,8 @@ public class WorldCreatePanel extends JPanel implements ActionListener, ItemList
 		lblDirtyProb.setBounds(396, 31, 81, 14);
 		northCenterPanel.add(lblDirtyProb);
 		
-		amsCBoxProbab = new JComboBox();
-		amsCBoxProbab.setModel(new DefaultComboBoxModel(new String[] {"0", ".25", ".5", "1"}));
+		amsCBoxProbab = new JComboBox<String>();
+		amsCBoxProbab.setModel(new DefaultComboBoxModel<String>(new String[] {"0", ".25", ".5", "1"}));
 		amsCBoxProbab.setSelectedIndex(1);
 		amsCBoxProbab.setEnabled(false);
 		amsCBoxProbab.setBounds(459, 31, 46, 20);
@@ -248,7 +259,7 @@ public class WorldCreatePanel extends JPanel implements ActionListener, ItemList
 		amsBtnClear.addActionListener(this);
     	
 	    add(northPanel, BorderLayout.NORTH);
-		trialAgents = new JList(vacuumStrings);
+		trialAgents = new JList<String>(vacuumStrings);
 		JScrollPane scrollPane = new JScrollPane(trialAgents);
 		scrollPane.setPreferredSize(new Dimension(175,95));
 		scrollPane.setBackground(metalColor);
@@ -297,28 +308,42 @@ public class WorldCreatePanel extends JPanel implements ActionListener, ItemList
 		centerPanel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createRaisedBevelBorder(), BorderFactory.createLoweredBevelBorder()));
 		add(centerPanel, BorderLayout.CENTER);
     }
-	
-    public void actionPerformed(ActionEvent e) {
-    	String action = e.getActionCommand();
-		if (action.equals("Build")) build();
-		if(action.equals("Destroy")) destroy();//simulate();
-		
-		 if (action.equals("Run")){
-		    amsBtnStep.setEnabled(false);
-		    amsBtnRun.setEnabled(false);
-		    world.maxSteps = Integer.parseInt(amsTextFieldMaxSteps.getText()); 
-			world.run();
-		    }
-		    else if (action.equals("Step")) {
-		    world.maxSteps = Integer.parseInt(amsTextFieldMaxSteps.getText()); 
-			world.takeStep();
-		    }
-		 if (action.equals("comboBoxChanged")){
-			 amsBtnBuildEnv.setEnabled(true);
-		 }
-		 
+    
+    public class MyFocusAdapter extends FocusAdapter {
+		public void focusGained(FocusEvent e) {
+			amsBtnClear.setEnabled(false);
+		}
 
-    }
+		public void focusLost(FocusEvent e){} //focusgained is 
+    }	
+    
+	public void actionPerformed(ActionEvent e) {
+		String action = e.getActionCommand();
+		if (action.equals("Build")) {
+			build();
+		}
+		// if(action.equals("Destroy")) destroy();//simulate(); //ams reload map
+		if (action.equals("Reload"))
+			reload();
+
+		if (action.equals("Run")) {
+			amsBtnStep.setEnabled(false);
+			amsBtnRun.setEnabled(false);
+			amsBtnBuildEnv.setEnabled(false);
+			world.maxSteps = Integer.parseInt(amsTextFieldMaxSteps.getText());
+			world.run();
+			amsBtnBuildEnv.setEnabled(true);
+			amsBtnClear.setEnabled(true);
+		}
+		if (action.equals("Step")) {
+			world.maxSteps = Integer.parseInt(amsTextFieldMaxSteps.getText());
+			world.takeStep();
+		}
+		if (action.equals("comboBoxChanged")) {
+			amsBtnBuildEnv.setEnabled(true);
+		}
+
+	}
     
     public void simulate() {
     	//buildWorld.setBackground(Color.gray.brighter());
@@ -361,16 +386,21 @@ public class WorldCreatePanel extends JPanel implements ActionListener, ItemList
     	}
     }
     
-    private void build() {
+    private void buildBase(boolean newmap) {
     	Agent[] a = new Agent[1];
     	a[0] = createAgent((String)amsCbxAgent.getSelectedItem());
     	
-        	int x = (int)amsSpinnerX.getValue();
-        	int y = (int)amsSpinnerY.getValue();
-        	double probDirty = Double.parseDouble(amsCBoxProbab.getSelectedItem().toString());
+        int x = (int)amsSpinnerX.getValue();
+        int y = (int)amsSpinnerY.getValue();
+
+		if (newmap) {
+			double probDirty = Double.parseDouble(amsCBoxProbab
+					.getSelectedItem().toString());
+			world = new VacuumWorld(a, x, y, probDirty, holder);
+		} else {
+			world = new VacuumWorld(a, x, y, holder);
+		}
         	
-    		world = new VacuumWorld(a, x, y, probDirty, holder);
-    		
     		holder.setTitle("Vacuum World Simulated Environment");
 
     	remove(centerPanel);
@@ -389,13 +419,21 @@ public class WorldCreatePanel extends JPanel implements ActionListener, ItemList
 		amsBtnRun.setEnabled(true);
 		amsBtnStep.setEnabled(true);
     } 
+
+    private void build() {
+    	buildBase(true); //new world map
+    } 
     
+    private void reload() {
+    	buildBase(false); //reload world map
+    } 
+    
+    @SuppressWarnings("unused")
+	@Deprecated
     private void destroy() {
-    	
-		amsBtnRun.setEnabled(true);
+    	amsBtnRun.setEnabled(true);
 		amsBtnStep.setEnabled(true);
     	remove(centerPanel);
-    	
     }
     
     
